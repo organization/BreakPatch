@@ -3,44 +3,28 @@
 namespace maru;
 
 use pocketmine\plugin\PluginBase;
-use pocketmine\event\Listener;
-use pocketmine\event\block\BlockBreakEvent;
-use pocketmine\math\Vector3;
 use pocketmine\block\Block;
-use ifteam\SimpleArea\database\world\WhiteWorldProvider;
-use ifteam\SimpleArea\database\area\AreaProvider;
-use pocketmine\plugin\Plugin;
-use pocketmine\utils\TextFormat as Color;
+use pocketmine\item\Item;
+use maru\block\DarkOakWoodStairs;
+use maru\block\JungleWoodStairs;
+use maru\block\SpruceWoodStairs;
 
-class BreakPatch extends PluginBase implements Listener {
-	
-	private $simplearea = false, $whiteworld, $area;
-	
+class BreakPatch extends PluginBase{
 	public function onEnable() {
-		$this->getServer()->getPluginManager()->registerEvents($this, $this);
-		if ($this->getServer()->getPluginManager()->getPlugin("SimpleArea") instanceof Plugin) {
-			$this->whiteworld = WhiteWorldProvider::getInstance();
-			$this->area = AreaProvider::getInstance();
-			$this->simplearea = true;
-			$this->getLogger()->info(Color::AQUA."심플에리어 연동 완료!");
+		$this->registerBlock(DarkOakWoodStairs::DARK_OAK_WOOD_STAIRS, DarkOakWoodStairs::class);
+		$this->registerBlock(JungleWoodStairs::JUNGLE_WOOD_STAIRS, JungleWoodStairs::class);
+		$this->registerBlock(SpruceWoodStairs::SPRUCE_WOOD_STAIRS, SpruceWoodStairs::class);
+	}
+	public function registerBlock($id, $class){
+		Block::$list[$id] = $class;
+		if($id < 255){
+			Item::$list[$id] = $class;
+			if(!Item::isCreativeItem($item = Item::get($id))){
+				Item::addCreativeItem($item);
+			}
 		}
-	}
-	/**
-	 * 
-	 * @return boolean
-	 */
-	public function isSimpleAreaEnabled() {
-		return $this->simplearea;
-	}
-	/**
-	 * 
-	 * @priority HIGHEST
-	 */
-	public function onBreak(BlockBreakEvent $event) {
-		if ($event->isCancelled())
-			return;
-		$player = $event->getPlayer();
-		$block = $event->getBlock();
-		$block->getLevel()->setBlock(new Vector3($block->getX(), $block->getY(), $block->getZ()), Block::get(0));
+		for($data = 0; $data < 16; ++$data){
+			Block::$fullList[($id << 4) | $data] = new $class($data);
+		}
 	}
 }
